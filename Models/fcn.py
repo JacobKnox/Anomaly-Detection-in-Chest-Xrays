@@ -1,5 +1,10 @@
 from typing import Any
 from keras import layers, Model
+import numpy as np
+from PIL import Image
+from tqdm import tqdm
+import os
+import pdb
 
 
 class FCN:
@@ -9,11 +14,11 @@ class FCN:
         self.filter = filter
         self.model = self._make_model()
 
-    def predict(self):
-        pass
+    def predict(self, input):
+        return self.model.predict(input)
 
-    def fit(self):
-        pass
+    def fit(self, input, labels):
+        self.model.fit(input, labels)
 
     def summary(self) -> None:
         print(self.model.summary())
@@ -46,4 +51,38 @@ class FCN:
 
 
 if __name__ == "__main__":
+    data_dir = "C:\\Users\\epicd\\Documents\\Data"
     FCN()
+    data_info = np.loadtxt(
+        "C:\\Users\\epicd\\Documents\\GitHub\\Anomaly-Detection-in-Chest-Xrays\\image_docs.csv", dtype=str, delimiter=',', skiprows=1)
+    train_data_info = data_info[np.where(data_info[:, 2] == "TRAIN")]
+    train_labels = train_data_info[:, 1]
+    train_data = []
+    if os.path.exists(".\\Data\\train.npy"):
+        train_data = np.load(".\\Data\\train.npy")
+    else:
+        for row in tqdm(train_data_info, desc="Loading training images", unit="image"):
+            image = Image.open(f"{data_dir}\\{row[1]}\\{row[2]}\\{row[0]}")
+            train_data.append(np.asarray(image))
+        np.save(".\\Data\\train.npy", train_data)
+    test_data_info = data_info[np.where(data_info[:, 2] == "TEST")]
+    test_labels = test_data_info[:, 1]
+    test_data = []
+    if os.path.exists(".\\Data\\test.npy"):
+        train_data = np.load(".\\Data\\test.npy")
+    else:
+        for row in tqdm(test_data_info, desc="Loading testing images", unit="image"):
+            image = Image.open(f"{data_dir}\\{row[1]}\\{row[2]}\\{row[0]}")
+            test_data.append(np.asarray(image))
+        np.save(".\\Data\\test.npy", test_data)
+    val_data_info = data_info[np.where(data_info[:, 2] == "VALIDATION")]
+    val_labels = val_data_info[:, 1]
+    val_data = []
+    if os.path.exists(".\\Data\\val.npy"):
+        train_data = np.load(".\\Data\\val.npy")
+    else:
+        for row in tqdm(val_data_info, desc="Loading validation images", unit="image"):
+            image = Image.open(f"{data_dir}\\{row[1]}\\{row[2]}\\{row[0]}")
+            val_data.append(np.asarray(image))
+        np.save(".\\Data\\val.npy", val_data)
+    pdb.set_trace()
