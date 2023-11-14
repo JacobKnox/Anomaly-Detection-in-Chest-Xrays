@@ -28,8 +28,11 @@ class FCN:
     def predict(self, input):
         return self.model.predict(input)
 
-    def fit(self, input, labels):
-        self.model.fit(input, labels)
+    def fit(self, inputs, labels):
+        for input, label in tqdm(zip(inputs, labels), desc="Training", unit="sample"):
+            input = input.reshape(1, input.shape[0], input.shape[1])
+            label = np.asarray(label).reshape(1)
+            self.model.train_on_batch(input, label)
 
     def summary(self) -> None:
         print(self.model.summary())
@@ -45,9 +48,11 @@ class FCN:
         group_five = self._group(group_four, self.filter * 16, 2)
         fully_connected_one = self._group(group_five, self.filter * 2, 1, 1)
 
-        predictions = self._group(
-            fully_connected_one, self.num_classes, 1, 1, True, "softmax"
-        )
+        # predictions = self._group(
+        #     fully_connected_one, self.num_classes, 1, 1, True, "softmax"
+        # )
+
+        predictions = self._group(fully_connected_one, 1, 1, 1, True, "softmax")
 
         return Model(inputs=input, outputs=predictions)
 
@@ -85,46 +90,48 @@ if __name__ == "__main__":
     _, train_labels = np.unique(train_data_info[:, 1], return_inverse=True)
     train_labels += 1
     train_data = []
-    if os.path.exists(".\\Data\\train.npy"):
-        train_data = np.load(".\\Data\\train.npy")
-    else:
-        i = -1
-        for row in tqdm(train_data_info, desc="Loading training images", unit="image"):
-            i += 1
-            if i % 100 != 0:
-                continue
-            image = Image.open(f"{data_dir}\\{row[1]}\\{row[2]}\\{row[0]}")
-            if len(np.asarray(image).shape) > 2:
-                train_labels = np.delete(train_labels, i)
-                continue
-                # temp = np.asarray(image)
-                # print(temp)
-                # pdb.set_trace()
-            train_data.append(np.asarray(image))
-        # np.save(".\\Data\\train.npy", train_data)
+    delete_indices = []
+    i = -1
+    for row in tqdm(train_data_info, desc="Loading training images", unit="image"):
+        i += 1
+        if i % 100 != 0:
+            delete_indices.append(i)
+            continue
+        image = Image.open(f"{data_dir}\\{row[1]}\\{row[2]}\\{row[0]}")
+        image = np.asarray(image)
+        if len(image.shape) > 2:
+            delete_indices.append(i)
+            continue
+        train_data.append(image)
+    train_labels = np.delete(train_labels, delete_indices)
+    pdb.set_trace()
     my_model.fit(train_data, train_labels)
     test_data_info = data_info[np.where(data_info[:, 2] == "TEST")]
     _, test_labels = np.unique(test_data_info[:, 1], return_inverse=True)
     test_labels += 1
     test_data = []
-    if os.path.exists(".\\Data\\test.npy"):
-        train_data = np.load(".\\Data\\test.npy")
-    else:
-        for row in tqdm(test_data_info, desc="Loading testing images", unit="image"):
-            image = Image.open(f"{data_dir}\\{row[1]}\\{row[2]}\\{row[0]}")
-            test_data.append(np.asarray(image))
-        # np.save(".\\Data\\test.npy", test_data)
+    delete_indices = []
+    for row in tqdm(test_data_info, desc="Loading testing images", unit="image"):
+        image = Image.open(f"{data_dir}\\{row[1]}\\{row[2]}\\{row[0]}")
+        image = np.asarray(image)
+        if len(image.shape) > 2:
+            delete_indices.append(i)
+            continue
+        test_data.append(image)
+    np.delete(test_labels, delete_indices)
     prediction = my_model.predict(test_data)
     print(f"Accuracy: {sum(prediction == test_labels)/len(test_labels)}")
     val_data_info = data_info[np.where(data_info[:, 2] == "VALIDATION")]
     _, val_labels = np.unique(val_data_info[:, 1], return_inverse=True)
     val_labels += 1
     val_data = []
-    if os.path.exists(".\\Data\\val.npy"):
-        train_data = np.load(".\\Data\\val.npy")
-    else:
-        for row in tqdm(val_data_info, desc="Loading validation images", unit="image"):
-            image = Image.open(f"{data_dir}\\{row[1]}\\{row[2]}\\{row[0]}")
-            val_data.append(np.asarray(image))
-        # np.save(".\\Data\\val.npy", val_data)
+    delete_indices = []
+    for row in tqdm(val_data_info, desc="Loading validation images", unit="image"):
+        image = Image.open(f"{data_dir}\\{row[1]}\\{row[2]}\\{row[0]}")
+        image = np.asarray(image)
+        if len(image.shape) > 2:
+            delete_indices.append(i)
+            continue
+        val_data.append(image)
+    np.delete(val_labels, delete_indices)
     pdb.set_trace()
