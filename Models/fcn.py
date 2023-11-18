@@ -78,8 +78,8 @@ class FCN:
 
 if __name__ == "__main__":
     data_dir = "C:\\Users\\epicd\\Documents\\Data"
-    my_model = FCN()
-    my_model.summary()
+    # my_model = FCN()
+    # my_model.summary()
     data_info = np.loadtxt(
         "C:\\Users\\epicd\\Documents\\GitHub\\Anomaly-Detection-in-Chest-Xrays\\image_docs.csv",
         dtype=str,
@@ -92,46 +92,71 @@ if __name__ == "__main__":
     train_data = []
     delete_indices = []
     i = -1
-    for row in tqdm(train_data_info, desc="Loading training images", unit="image"):
-        i += 1
-        if i % 100 != 0:
-            delete_indices.append(i)
-            continue
-        image = Image.open(f"{data_dir}\\{row[1]}\\{row[2]}\\{row[0]}")
-        image = np.asarray(image)
-        if len(image.shape) > 2:
-            delete_indices.append(i)
-            continue
-        train_data.append(image)
-    train_labels = np.delete(train_labels, delete_indices)
-    pdb.set_trace()
-    my_model.fit(train_data, train_labels)
+    if os.path.exists("./Data/train_data.npy"):
+        train_data = np.load("./Data/train_data.npy", allow_pickle=True)
+        train_labels = np.load("./Data/train_labels.npy")
+    else:
+        for row in tqdm(train_data_info, desc="Loading training images", unit="image"):
+            i += 1
+            if i % 100 != 0:
+                delete_indices.append(i)
+                continue
+            image = Image.open(f"{data_dir}\\{row[1]}\\{row[2]}\\{row[0]}")
+            image = np.asarray(image)
+            if len(image.shape) > 2:
+                delete_indices.append(i)
+                continue
+            train_data.append(image)
+        train_labels = np.delete(train_labels, delete_indices)
+        train_data = np.asarray(train_data, dtype="object")
+        np.save("./Data/train_data.npy", train_data)
+        np.save("./Data/train_labels.npy", train_labels)
+    # my_model.fit(train_data, train_labels)
     test_data_info = data_info[np.where(data_info[:, 2] == "TEST")]
     _, test_labels = np.unique(test_data_info[:, 1], return_inverse=True)
     test_labels += 1
-    test_data = []
+    test_data = np.array([], dtype="object")
     delete_indices = []
-    for row in tqdm(test_data_info, desc="Loading testing images", unit="image"):
-        image = Image.open(f"{data_dir}\\{row[1]}\\{row[2]}\\{row[0]}")
-        image = np.asarray(image)
-        if len(image.shape) > 2:
-            delete_indices.append(i)
-            continue
-        test_data.append(image)
-    np.delete(test_labels, delete_indices)
-    prediction = my_model.predict(test_data)
-    print(f"Accuracy: {sum(prediction == test_labels)/len(test_labels)}")
+    i = -1
+    pdb.set_trace()
+    if os.path.exists("./Data/test_data.npy"):
+        test_data = np.load("./Data/test_data.npy", allow_pickle=True)
+        test_labels = np.load("./Data/test_labels.npy")
+    else:
+        for row in tqdm(test_data_info, desc="Loading testing images", unit="image"):
+            i += 1
+            image = Image.open(f"{data_dir}\\{row[1]}\\{row[2]}\\{row[0]}")
+            image = np.asarray(image)
+            if len(image.shape) > 2:
+                delete_indices.append(i)
+                continue
+            test_data.append(image)
+        np.delete(test_labels, delete_indices)
+        test_data = np.asarray(test_data, dtype="object")
+        np.save("./Data/test_data.npy", test_data)
+        np.save("./Data/test_labels.npy", test_labels)
+    # prediction = my_model.predict(test_data)
+    # print(f"Accuracy: {sum(prediction == test_labels)/len(test_labels)}")
     val_data_info = data_info[np.where(data_info[:, 2] == "VALIDATION")]
     _, val_labels = np.unique(val_data_info[:, 1], return_inverse=True)
     val_labels += 1
     val_data = []
     delete_indices = []
-    for row in tqdm(val_data_info, desc="Loading validation images", unit="image"):
-        image = Image.open(f"{data_dir}\\{row[1]}\\{row[2]}\\{row[0]}")
-        image = np.asarray(image)
-        if len(image.shape) > 2:
-            delete_indices.append(i)
-            continue
-        val_data.append(image)
-    np.delete(val_labels, delete_indices)
+    i = -1
+    if os.path.exists("./Data/val_data.npy"):
+        val_data = np.load("./Data/val_data.npy", allow_pickle=True)
+        val_labels = np.load("./Data/val_labels.npy")
+    else:
+        for row in tqdm(val_data_info, desc="Loading validation images", unit="image"):
+            i += 1
+            image = Image.open(f"{data_dir}\\{row[1]}\\{row[2]}\\{row[0]}")
+            image = np.asarray(image)
+            if len(image.shape) > 2:
+                delete_indices.append(i)
+                continue
+            val_data.append(image)
+        np.delete(val_labels, delete_indices)
+        val_data = np.asarray(val_data, dtype="object")
+        np.save("./Data/val_data.npy", val_data)
+        np.save("./Data/val_labels.npy", val_labels)
     pdb.set_trace()
