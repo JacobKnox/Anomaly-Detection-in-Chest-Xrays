@@ -26,6 +26,9 @@ class FCN:
             ],
         )
 
+    def save(self, path: str):
+        self.model.save(path)
+
     def predict(self, input):
         return self.model.predict(input)
 
@@ -57,7 +60,7 @@ class FCN:
         # )
 
         predictions = self._group(
-            fully_connected_one, 1, max_pool=True, activation="softmax"
+            fully_connected_one, self.num_classes, max_pool=True, activation="softmax"
         )
 
         return Model(inputs=input, outputs=predictions)
@@ -84,18 +87,17 @@ class FCN:
 
 if __name__ == "__main__":
     data_dir = "C:\\Users\\epicd\\Documents\\Data"
+    data_info = np.loadtxt(
+        "C:\\Users\\epicd\\Documents\\GitHub\\Anomaly-Detection-in-Chest-Xrays\\image_docs.csv",
+        dtype=str,
+        delimiter=",",
+        skiprows=1,
+    )
     if os.path.exists(f"{os.getcwd()}/my_model.keras"):
         my_model = tf.keras.models.load_model(f"{os.getcwd()}/my_model.keras")
     else:
         my_model = FCN()
         my_model.summary()
-        pdb.set_trace()
-        data_info = np.loadtxt(
-            "C:\\Users\\epicd\\Documents\\GitHub\\Anomaly-Detection-in-Chest-Xrays\\image_docs.csv",
-            dtype=str,
-            delimiter=",",
-            skiprows=1,
-        )
         train_data, train_labels = ([], [])
         if os.path.exists("./Data/train_data.npy"):
             print("Loading training images...")
@@ -152,7 +154,8 @@ if __name__ == "__main__":
                     delete_indices.append(i)
                     continue
                 val_data.append(image)
-            np.delete(val_labels, delete_indices)
+            val_labels = np.delete(val_labels, delete_indices)
+            pdb.set_trace()
             val_data = np.asarray(val_data)
             np.save("./Data/val_data.npy", val_data)
             np.save("./Data/val_labels.npy", val_labels)
@@ -186,12 +189,14 @@ if __name__ == "__main__":
                 delete_indices.append(i)
                 continue
             test_data.append(image)
-        np.delete(test_labels, delete_indices)
+        test_labels = np.delete(test_labels, delete_indices)
         test_data = np.asarray(test_data)
         np.save("./Data/test_data.npy", test_data)
         np.save("./Data/test_labels.npy", test_labels)
     prediction = my_model.predict(test_data)
+    # Uncomment below line after re-training model with change
+    # prediction = np.argmax(my_model.predict(test_data)[:, 0], axis=1) + 1
     print(f"Accuracy: {sum(prediction == test_labels)/len(test_labels)}")
+    pdb.set_trace()
     test_data, test_labels = (None, None)
     del test_data, test_labels
-    pdb.set_trace()
