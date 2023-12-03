@@ -19,11 +19,8 @@ class FCN:
         self.model = self._make_model()
         self.model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
-            loss=tf.keras.losses.BinaryCrossentropy(),
-            metrics=[
-                tf.keras.metrics.BinaryAccuracy(),
-                tf.keras.metrics.FalseNegatives(),
-            ],
+            loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+            metrics=["acc"],
         )
 
     def save(self, path: str):
@@ -107,11 +104,11 @@ if __name__ == "__main__":
             start = time()
             print("Loading training labels...")
             train_labels = np.load("./Data/train_labels.npy")
+            train_labels -= 1
             print(f"Done! Took {time() - start} seconds.")
         else:
             train_data_info = data_info[np.where(data_info[:, 2] == "TRAIN")]
             _, train_labels = np.unique(train_data_info[:, 1], return_inverse=True)
-            train_labels += 1
             delete_indices = []
             i = -1
             for row in tqdm(
@@ -137,11 +134,11 @@ if __name__ == "__main__":
             start = time()
             print("Loading validation labels...")
             val_labels = np.load("./Data/val_labels.npy")
+            val_labels -= 1
             print(f"Done! Took {time() - start} seconds.")
         else:
             val_data_info = data_info[np.where(data_info[:, 2] == "VALIDATION")]
             _, val_labels = np.unique(val_data_info[:, 1], return_inverse=True)
-            val_labels += 1
             delete_indices = []
             i = -1
             for row in tqdm(
@@ -174,11 +171,11 @@ if __name__ == "__main__":
         start = time()
         print("Loading testing labels...")
         test_labels = np.load("./Data/test_labels.npy")
+        test_labels -= 1
         print(f"Done! Took {time() - start} seconds.")
     else:
         test_data_info = data_info[np.where(data_info[:, 2] == "TEST")]
         _, test_labels = np.unique(test_data_info[:, 1], return_inverse=True)
-        test_labels += 1
         delete_indices = []
         i = -1
         for row in tqdm(test_data_info, desc="Loading testing images", unit="image"):
@@ -193,10 +190,9 @@ if __name__ == "__main__":
         test_data = np.asarray(test_data)
         np.save("./Data/test_data.npy", test_data)
         np.save("./Data/test_labels.npy", test_labels)
-    prediction = my_model.predict(test_data)
-    # Uncomment below line after re-training model with change
-    # prediction = np.argmax(my_model.predict(test_data)[:, 0], axis=1) + 1
+    prediction = np.argmax(my_model.predict(test_data), axis=1)
     print(f"Accuracy: {sum(prediction == test_labels)/len(test_labels)}")
+    print(f"Classes: {np.unique(data_info[np.where(data_info[:, 2] == 'TEST')][:, 1])}")
     pdb.set_trace()
     test_data, test_labels = (None, None)
     del test_data, test_labels
