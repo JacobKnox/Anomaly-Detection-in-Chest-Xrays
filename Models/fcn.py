@@ -31,7 +31,11 @@ class FCN:
 
     def fit(self, inputs, labels, vals, val_labels):
         self.model.fit(
-            inputs, labels, batch_size=1000, validation_data=(vals, val_labels)
+            inputs,
+            labels,
+            batch_size=100,
+            validation_data=(vals, val_labels),
+            verbose="2",
         )
 
     def summary(self) -> None:
@@ -41,18 +45,20 @@ class FCN:
     def _make_model(self) -> Model:
         input = layers.Input(shape=(256, 256, 1))
 
-        group_one = self._group(input, self.filter, 1)
-        group_two = self._group(group_one, self.filter * 2, 1)
-        group_three = self._group(group_two, self.filter * 4, 2)
-        group_four = self._group(group_three, self.filter * 8, 2)
-        group_five = self._group(group_four, self.filter * 16, 2)
-        fully_connected_one = self._group(group_five, self.filter * 2, 1, 1)
+        group_one = self._group(input, self.filter)
+        group_two = self._group(group_one, self.filter * 2)
+        group_three = self._group(group_two, self.filter * 4)
+        group_four = self._group(group_three, self.filter * 8)
+        group_five = self._group(group_four, self.filter * 16)
+        fully_connected_one = self._group(group_five, self.filter * 2)
 
         # predictions = self._group(
         #     fully_connected_one, self.num_classes, 1, 1, True, "softmax"
         # )
 
-        predictions = self._group(fully_connected_one, 1, 1, 1, True, "softmax")
+        predictions = self._group(
+            fully_connected_one, 1, max_pool=True, activation="softmax"
+        )
 
         return Model(inputs=input, outputs=predictions)
 
@@ -60,8 +66,8 @@ class FCN:
         self,
         previous_layer: Any | list | None,
         filter: int,
-        stride: int,
-        kernel: int = 3,
+        stride: tuple = (2, 2),
+        kernel: tuple = (2, 2),
         max_pool: bool = False,
         activation: str = "relu",
     ) -> Any | None:
@@ -83,6 +89,7 @@ if __name__ == "__main__":
     else:
         my_model = FCN()
         my_model.summary()
+        pdb.set_trace()
         data_info = np.loadtxt(
             "C:\\Users\\epicd\\Documents\\GitHub\\Anomaly-Detection-in-Chest-Xrays\\image_docs.csv",
             dtype=str,
