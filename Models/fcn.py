@@ -90,8 +90,10 @@ if __name__ == "__main__":
         delimiter=",",
         skiprows=1,
     )
+    my_model = None
     if os.path.exists(f"{os.getcwd()}/my_model.keras"):
         my_model = tf.keras.models.load_model(f"{os.getcwd()}/my_model.keras")
+        my_model.summary()
     else:
         my_model = FCN()
         my_model.summary()
